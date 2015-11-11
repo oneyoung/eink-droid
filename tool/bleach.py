@@ -32,47 +32,54 @@ class Bleach(object):
 
     def _m_attr(self, node):
         '''
-        modify attributes
+        apply to all attrs
         '''
-        def set_attr(o, name, val, filter_func=None):
-            if o.hasAttribute(name):
-                if filter_func:
-                    old_val = o.getAttribute(name)
-                    if not filter_func(old_val):
-                        return
-                o.setAttribute(name, val)
+        # apply to all attrs
+        if node.attributes:
+            for k in node.attributes.keys():
+                val = node.getAttribute(k)
+                if self._is_rgb(val):
+                    node.setAttribute(k, self._rgb2wb(val))
 
-        if hasattr(node, 'hasAttribute'):
-            set_attr(node, 'android:textColor', '#ff000000')
-            set_attr(node, 'android:background', '#ffffffff',
-                     lambda s: s.startswith("#"))
+    def _m_val(self, node):
+        '''
+        apply to all nodeValue
+        '''
+        val = node.nodeValue
+        if val and self._is_rgb(val):
+            node.nodeValue = self._rgb2wb(val)
 
-    def _m_color(self, node):
+    def _is_rgb(self, val):
+        if not val:
+            return False
+        if val.startswith('#') and len(val) == 9:
+            hexs = val[1:].lower()
+            s = '0123456789abcdef'
+            return all([c in s for c in hexs])
+        return False
+
+    def _rgb2wb(self, val):
         '''
-        modify color node
+        convert #aarrggbb to black/white
         '''
-        if node.nodeName == 'color':
-            child = node.childNodes[0]
-            val = child.nodeValue
-            if val.startswith('#'):
-                rest = val[1:]
-                values = []
-                for _ in range(4):
-                    hexval = int(rest[:2], 16)
-                    values.append(hexval)
-                    rest = rest[2:]
-                a, r, g, b = values
-                grey = (r + g + b)/3
-                if grey > 255/4*3:  # blank
-                    color = 'ffffff'
-                else:
-                    color = '000000'
-                if a > 0:
-                    alpha = 'ff'
-                else:
-                    alpha = '00'
-                new_val = '#' + alpha + color
-                child.nodeValue = new_val
+        rest = val[1:]
+        values = []
+        for _ in range(4):
+            hexval = int(rest[:2], 16)
+            values.append(hexval)
+            rest = rest[2:]
+        a, r, g, b = values
+        grey = (r + g + b)/3
+        if grey > 255/4*3:  # blank
+            color = 'ffffff'
+        else:
+            color = '000000'
+        if a > 0:
+            alpha = 'ff'
+        else:
+            alpha = '00'
+        new_val = '#' + alpha + color
+        return new_val
 
     def _m_anima(self, node):
         '''
@@ -84,10 +91,13 @@ class Bleach(object):
 
     def handle_node(self, node):
         # first apply for methods starts with '_m_'
-        for attr in dir(self):
-            if attr.startswith('_m_'):
-                func = getattr(self, attr)
-                func(node)
+        try:
+            for attr in dir(self):
+                if attr.startswith('_m_'):
+                    func = getattr(self, attr)
+                    func(node)
+        except:
+            print "node failed: ", node.toxml()
 
         for c in node.childNodes:
             self.handle_node(c)

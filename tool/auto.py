@@ -7,9 +7,11 @@ apk = sys.argv[-1]
 apkname = os.path.splitext(os.path.basename(apk))[0]
 
 pkgdir = os.path.dirname(os.path.abspath(__file__))
+os.sys.path.append(pkgdir)
+
 apktool = os.path.join(pkgdir, 'apktool', 'apktool')
 signapk_dir = os.path.join(pkgdir, 'signapk')
-output_apk = apkname + ".eInk.apk"
+output_apk = apkname + ".Eink.apk"
 outdir = apkname + "-out"
 
 
@@ -18,7 +20,10 @@ os.system("{apktool} d -f -o {apkdir} {apk}".format(apktool=apktool,
                                                     apkdir=outdir,
                                                     apk=apk))
 # handle
-os.system("python2 %s/eink.py" % pkgdir)
+from bleach import Bleach
+bleacher = Bleach(outdir)
+bleacher.run()
+
 # build again
 tmp_apk = apkname + 'tmp'
 os.system("{apktool} b -f -o {apk} {apkdir}".format(apktool=apktool,

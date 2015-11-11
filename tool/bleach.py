@@ -74,6 +74,14 @@ class Bleach(object):
                 new_val = '#' + alpha + color
                 child.nodeValue = new_val
 
+    def _m_anima(self, node):
+        '''
+        modify animation node
+        '''
+        tags = ['alpha', 'scale', 'translate', 'rotate']
+        if node.nodeName in tags:
+            node.setAttribute('android:duration', '10')
+
     def handle_node(self, node):
         # first apply for methods starts with '_m_'
         for attr in dir(self):

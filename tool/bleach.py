@@ -69,15 +69,20 @@ class Bleach(object):
             values.append(hexval)
             rest = rest[2:]
         a, r, g, b = values
-        grey = (r + g + b)/3
-        if grey > 255/4*3:  # blank
-            color = 'ffffff'
-        else:
-            color = '000000'
-        if a > 0:
+        grey = int(0.299*r + 0.587*g + 0.144*b)
+        # we use 4 level mapping
+        N = 4
+        base = 0x100/N
+        level = grey/base + (1 if grey > 0x7f else 0)
+        c_value = level*base
+        if c_value > 0xff:
+            c_value = 0xff
+        color = ('%.2x' % (c_value)) * 3
+
+        if a > 0x80:
             alpha = 'ff'
         else:
-            alpha = '00'
+            alpha = '%.2x' % a
         new_val = '#' + alpha + color
         return new_val
 
@@ -117,8 +122,9 @@ class Bleach(object):
                 if attr.startswith('_m_'):
                     func = getattr(self, attr)
                     func(node)
-        except:
+        except Exception, e:
             print "node failed: ", node.toxml()
+            print str(e)
 
         for c in node.childNodes:
             self.handle_node(c)

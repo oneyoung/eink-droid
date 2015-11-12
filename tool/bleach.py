@@ -88,6 +88,27 @@ class Bleach(object):
         tags = ['alpha', 'scale', 'translate', 'rotate']
         if node.nodeName in tags:
             node.setAttribute('android:duration', '10')
+            # now we set fromXXX equals toXXX
+            attrs = node.attributes.keys()
+            # check if it need to go back to init state
+            back = False
+            for attr in ['android:fillBefore', 'android:fillEnable']:
+                if attr in attrs:
+                    val = node.getAttribute(attr)
+                    if val == 'true':
+                        back = True
+            for attr in attrs:
+                if attr.startswith('android:from'):
+                    from_attr = attr
+                    what = attr[len('android:from')]
+                    to_attr = 'android:to' + what
+                    if to_attr in attrs:  # 'from' and 'to' exists
+                        from_val = node.getAttribute(from_attr)
+                        to_val = node.getAttribute(to_attr)
+                        if back:  # 'to' <= 'from'
+                            node.setAttribute(to_attr, from_val)
+                        else:
+                            node.setAttribute(from_attr, to_val)
 
     def handle_node(self, node):
         # first apply for methods starts with '_m_'
